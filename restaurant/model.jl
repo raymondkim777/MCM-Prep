@@ -42,11 +42,6 @@ close(model_file)
 # Solving the optimization problem
 JuMP.optimize!(m)
 
-
-# Compute total cost
-total_cost = objective_value(m) * r * t * (c_r + c_f + c_t)
-
-
 # Print the information about the optimum
 results_file = open("results.lp", "w")
 println(results_file, "PARAMETERS:")
@@ -62,7 +57,15 @@ println(results_file, "Total reviewers needed: ", objective_value(m))
 println(results_file, "Reviewers needed per region: ")
 println(results_file, value.(p))
 
-println(results_file, "\nTotal cost for ", t, " days:")
-println(results_file, "\$", total_cost)
+# Compute total cost
+let total_cost = 0
+    for i in 1:length(p)
+        total_cost += value.(p)[i] * r * ceil(R[i] * w / (value.(p)[i] * r)) * (c_r + c_f + c_t)
+    end
+
+    println(results_file, "\nTotal cost for ", t, " days:")
+    println(results_file, "\$", total_cost)
+end
+# total_cost = objective_value(m) * r * t * (c_r + c_f + c_t)
 
 close(results_file)

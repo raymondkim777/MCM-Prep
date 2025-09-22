@@ -12,4 +12,4 @@ Reviewers needed per region:
 [2.0, 3.0, 15.0, 2.0, 1.0, 2.0, 2.0]
 
 Total cost for 120 days:
-$810000.0
+$695250.0

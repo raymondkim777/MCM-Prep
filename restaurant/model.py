@@ -145,12 +145,19 @@ def find_reviewer_cnt_per_region(
 
 
 def compute_total_cost(
+		region_res_cnt: list,
 		reviewer_cnt: list, 
-		days: int, rate: int, 
+		days: int, rate: int, weight: int,
 		cost_r: float, cost_f: float, cost_t: float
 	) -> float:
 
-	return sum(reviewer_cnt) * rate * days * (cost_r + cost_f + cost_t)
+	total_cost = 0
+	for i in range(len(region_res_cnt)):
+		days_required = math.ceil(region_res_cnt[i] * weight / (reviewer_cnt[i] * rate))
+		review_cnt = reviewer_cnt[i] * rate * days_required
+		add_cost = review_cnt * (cost_r + cost_f + cost_t)
+		total_cost += add_cost
+	return total_cost
 
 
 def regional_model(
@@ -172,8 +179,10 @@ def regional_model(
 	)
 
 	total_cost = compute_total_cost(
+		region_res_cnt=region_res_cnt,
 		reviewer_cnt=reviewer_cnt, 
-		days=t, rate=r, cost_r=c_r, cost_f=c_f, cost_t=c_t
+		days=t, rate=r, weight=w,
+		cost_r=c_r, cost_f=c_f, cost_t=c_t
 	)
 
 	# OUTPUT
