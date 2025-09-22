@@ -1,0 +1,15 @@
+PARAMETERS:
+Days = 120
+Reviews per restaurant = 1
+Review rate = 1
+Review salary = $100
+Food allowance = $100
+Travel allowance = $50
+
+RESULTS:
+Total reviewers needed: 27
+Reviewers needed per region:
+[2, 3, 15, 2, 1, 2, 2]
+
+Total cost for 120 days:
+$810000
