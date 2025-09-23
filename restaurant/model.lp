@@ -1,12 +1,12 @@
 Min p[1] + p[2] + p[3] + p[4] + p[5] + p[6] + p[7]
 Subject to
- reviews[1] : 120 p[1] >= 121
- reviews[2] : 120 p[2] >= 315
- reviews[3] : 120 p[3] >= 1768
- reviews[4] : 120 p[4] >= 161
- reviews[5] : 120 p[5] >= 86
- reviews[6] : 120 p[6] >= 186
- reviews[7] : 120 p[7] >= 139
+ reviews[1] : 105 p[1] >= 121
+ reviews[2] : 105 p[2] >= 315
+ reviews[3] : 105 p[3] >= 1768
+ reviews[4] : 105 p[4] >= 161
+ reviews[5] : 105 p[5] >= 86
+ reviews[6] : 105 p[6] >= 186
+ reviews[7] : 105 p[7] >= 139
  p[1] >= 0
  p[2] >= 0
  p[3] >= 0

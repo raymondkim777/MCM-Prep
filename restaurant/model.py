@@ -159,7 +159,8 @@ def compute_total_cost(
 		add_cost = review_cnt * (cost_r + cost_f + cost_t)
 		costs.append(add_cost)
 		total_cost += add_cost
-	# print(costs)
+	print(costs)
+	print(total_cost)
 	return total_cost
 
 
