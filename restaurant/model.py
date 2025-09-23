@@ -115,12 +115,12 @@ def initial_model(
 
 def _parse_args():
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--t', default=120, help='number of days')
-	parser.add_argument('--w', default=1, help='reviews per restaurant')
-	parser.add_argument('--r', default=1, help='reviews per reviewer per day')
-	parser.add_argument('--cr', default=100, help='review salary')
-	parser.add_argument('--cf', default=100, help='food allowance')
-	parser.add_argument('--ct', default=50, help='travel allowance')
+	parser.add_argument('--t', type=int, default=120, help='number of days')
+	parser.add_argument('--w', type=int, default=1, help='reviews per restaurant')
+	parser.add_argument('--r', type=int, default=1, help='reviews per reviewer per day')
+	parser.add_argument('--cr', type=int, default=100, help='review salary')
+	parser.add_argument('--cf', type=int, default=100, help='food allowance')
+	parser.add_argument('--ct', type=int, default=50, help='travel allowance')
 
 	parser.add_argument('--regional', action='store_true', help='runs regional model instead of basic model')
 	return parser.parse_args()
@@ -151,12 +151,15 @@ def compute_total_cost(
 		cost_r: float, cost_f: float, cost_t: float
 	) -> float:
 
+	costs = []
 	total_cost = 0
 	for i in range(len(region_res_cnt)):
 		days_required = math.ceil(region_res_cnt[i] * weight / (reviewer_cnt[i] * rate))
 		review_cnt = reviewer_cnt[i] * rate * days_required
 		add_cost = review_cnt * (cost_r + cost_f + cost_t)
+		costs.append(add_cost)
 		total_cost += add_cost
+	# print(costs)
 	return total_cost
 
 
