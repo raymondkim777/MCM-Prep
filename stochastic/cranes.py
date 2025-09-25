@@ -1,7 +1,7 @@
 from tabulate import tabulate
 import argparse
 from math import comb
-from numpy.random import normal, uniform, binomial
+from numpy.random import normal, uniform
 
 
 def display_histogram(data, num_bins=8):
