@@ -1,15 +1,15 @@
 PARAMETERS:
-Days = 105
+Days = 120
 Reviews per restaurant = 1
 Review rate = 1
-Review salary = $100
+Review salary = $20
 Food allowance = $100
 Travel allowance = $50
 
 RESULTS:
-Total reviewers needed: 29
+Total reviewers needed: 15
 Reviewers needed per region:
-[2, 3, 17, 2, 1, 2, 2]
+[1, 2, 8, 1, 1, 1, 1]
 
-Total cost for 105 days:
-$694750
+Total cost for 120 days:
+$236470

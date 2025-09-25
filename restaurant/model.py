@@ -115,6 +115,7 @@ def initial_model(
 
 def _parse_args():
 	parser = argparse.ArgumentParser()
+	parser.add_argument('--a', type=float, default=1, help='ratio of restaurants to review')
 	parser.add_argument('--t', type=int, default=120, help='number of days')
 	parser.add_argument('--w', type=int, default=1, help='reviews per restaurant')
 	parser.add_argument('--r', type=int, default=1, help='reviews per reviewer per day')
@@ -167,6 +168,7 @@ def compute_total_cost(
 def regional_model(
 		region_res_cnt,		# array of restaurant cnts per region
 		region_rev_cnt,		# array of max reviewers available per region
+		a = 1, 				# ratio of restaurants to review
 		t = 120,			# days
 		w = 1,				# number of reviews per restaurant
 		r = 1,				# number of reviews per reviewer per days
@@ -175,15 +177,18 @@ def regional_model(
 		c_t = 50,			# travel allowance per review
 	):
 
+	# updated region restaurant cnt
+	new_region_res_cnt = [int(val * a) for val in region_res_cnt]
+
 	# number of reviewers (decision variable)
 	reviewer_cnt = find_reviewer_cnt_per_region(
-		region_res_cnt=region_res_cnt, 
+		region_res_cnt=new_region_res_cnt, 
 		region_rev_cnt=region_rev_cnt, 
 		days=t, rate=r, weight=w
 	)
 
 	total_cost = compute_total_cost(
-		region_res_cnt=region_res_cnt,
+		region_res_cnt=new_region_res_cnt,
 		reviewer_cnt=reviewer_cnt, 
 		days=t, rate=r, weight=w,
 		cost_r=c_r, cost_f=c_f, cost_t=c_t
@@ -225,6 +230,7 @@ if __name__ == "__main__":
 		regional_model(
 			region_res_cnt=region_res_cnt, 
 			region_rev_cnt=region_rev_cnt,
+			a=args.a, 			# ratio of restaurants to review
 			t=args.t,			# days
 			w=args.w,			# number of reviews per restaurant
 			r=args.r,			# number of reviews per reviewer per days

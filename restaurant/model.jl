@@ -7,6 +7,7 @@ m = Model(HiGHS.Optimizer)
 
 
 # Setting model parameters
+a = 1                                       # ratio of restaurants to review
 t = 105                                     # days
 w = 1                                       # number of reviews per restaurant
 r = 1                                       # number of reviews per reviewer per days
