@@ -81,7 +81,7 @@ def plot_model(data: list, stats: tuple, det=False, sto=False, trials=1, avg=Fal
                 data_sum[i + 1] += new_pop
 
             all_trials.append(data_sto)
-            plt.plot(years, data_sto, color='grey', alpha=0.5)
+            plt.plot(years, data_sto, color='grey', alpha=0.6/trials + 0.4)
         
         data_sum = [d / trials for d in data_sum]
         if avg:
