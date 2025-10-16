@@ -42,7 +42,7 @@ def calculate_mean_sd(data):
 def print_stats(stats: tuple):
     mean_r, std_r, mean_s, std_s = stats
     headers = ["", "Recruitment", "Survival"]
-    stat_table = [["Mean", mean_r, mean_s], ["STD", std_r, std_s]]
+    stat_table = [["Mean", mean_r, mean_s], ["St.D", std_r, std_s]]
     print(f"\nStatistics:")
     print(tabulate(stat_table, headers=headers, floatfmt=".2f"))
     print()
