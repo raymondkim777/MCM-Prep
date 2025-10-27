@@ -1,0 +1,1 @@
+python dragon_model.py --n 10 --t 10 
