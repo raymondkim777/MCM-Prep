@@ -1,5 +1,5 @@
 RESULTS:
-Optimum objective: 49949.99
+Optimum objective: $49949.99
 Optimum crop amounts: 
     - wheat: 0.0 ha
     - beans: 0.74 ha
@@ -7,7 +7,28 @@ Optimum crop amounts:
     - cotton: 2.94 ha
     - maize: 0.54 ha
     - tomatoes: 5.55 ha
-Optimum crop sales: [-0.0, 0.0, 37.96369366060307, 4.403489159238163, 0.0, 32.57852751025534]
-Optimum permanent labor: 0.5377174910479118
-Optimum temporary labor: [0.0, 0.0, 0.0, 833.8603123729758, 7.453893662980036, 0.0, 461.71572911077095, 388.42911926859693, 216.25052306855417, 108.2430370302103, 614.857515987138, 0.0]
-Optimum bundle fractions: [0.07411656748142671, 0.0, 0.9258834325185731]
+Optimum crop sales: 
+    - wheat: -0.0 ton
+    - beans: 0.0 ton
+    - onions: 37.96 ton
+    - cotton: 4.4 ton
+    - maize: 0.0 ton
+    - tomatoes: 32.58 ton
+Optimum permanent labor: 0.54 man
+Optimum temporary labor: 
+    - Jan: 0.0 hr
+    - Feb: 0.0 hr
+    - Mar: 0.0 hr
+    - Apr: 833.86 hr
+    - May: 7.45 hr
+    - Jun: 0.0 hr
+    - Jul: 461.72 hr
+    - Aug: 388.43 hr
+    - Sep: 216.25 hr
+    - Oct: 108.24 hr
+    - Nov: 614.86 hr
+    - Dec: 0.0 hr
+Optimum bundle fractions: 
+    - Bundle 1: 7%
+    - Bundle 2: 0%
+    - Bundle 3: 93%

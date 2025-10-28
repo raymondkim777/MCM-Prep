@@ -1,5 +1,5 @@
 # Declaring packages
-using JuMP, HiGHS, PrettyTables
+using JuMP, HiGHS, Dates
 
 
 # Preparing an optimization model
@@ -27,13 +27,13 @@ crop_idx_r = Dict{Integer, String}(
 crop_yield = [1.50, 1.00, 6.00, 1.50, 1.75, 6.00]    # ton/ha
 crop_price = [1000, 2000, 750, 3500, 700, 800]       # $/ton
 bundle = [
-    [0, 1.20, 0, 0, 0.15, 0.25],     # bundle 1 
-    [0, 0.73, 0, 0, 1.50, 0.25],     # bundle 2
-    [0, 0.70, 0, 0, 1.00, 0.75]      # bundle 3
+    [0, 1.20, 0, 0, 0.15, 0.25],        # bundle 1 
+    [0, 0.73, 0, 0, 1.50, 0.25],        # bundle 2
+    [0, 0.70, 0, 0, 1.00, 0.75]         # bundle 3
 ]
 
-land_total = 10                 # total land available (ha)
-land = [                        # fraction of month t that crop c occupies land --> land[t][c]
+land_total = 10                         # total land available (ha)
+land = [                                # fraction of month t that crop c occupies land --> land[t][c]
     [1, 1, 1, 0, 0, 0], 
     [1, 1, 1, 0, 0, 0], 
     [1, 1, 1, 0.5, 0, 0], 
@@ -48,7 +48,7 @@ land = [                        # fraction of month t that crop c occupies land 
     [1, 1, 1, 0, 0, 0], 
 ]
 
-labor = [                       # labor required during month t for crop c --> labor[t][c] (hr per ha)
+labor = [                               # labor required during month t for crop c --> labor[t][c] (hr per ha)
     [14, 6, 41, 0, 0, 0], 
     [4, 6, 40, 0, 0, 0], 
     [8, 6, 40, 40, 0, 0], 
@@ -62,15 +62,15 @@ labor = [                       # labor required during month t for crop c --> l
     [19, 60, 89, 34, 0, 48], 
     [11, 6, 37, 0, 0, 0], 
 ]
-wage_rate_family = 4144         # family labor, dollars per year per man
-wage_rate_perm = 5180           # permanent labor, dollars per year per man
-wage_rate_temp = 4              # temporary labor, dollars per hour (per man doesn't apply, its only by hours)
+wage_rate_family = 4144                 # family labor, dollars per year per man
+wage_rate_perm = 5180                   # permanent labor, dollars per year per man
+wage_rate_temp = 4                      # temporary labor, dollars per hour (per man doesn't apply, its only by hours)
 labor_monthly_hr = [160, 160, 184, 176, 168, 176, 176, 176, 176, 168, 176, 176]   # working hours in month t (hr per man)
-labor_family = 1.5              # family labor available (man)
+labor_family = 1.5                      # family labor available (man)
 
-water_annual_limit = 50         # annual water limit (kcub)
-water_month_limit = 5           # monthly water limit (kcub)
-water = [                       # water requriement for crop c in month t --> water[t][c]
+water_annual_limit = 50                 # annual water limit (kcub)
+water_month_limit = 5                   # monthly water limit (kcub)
+water = [                               # water requriement for crop c in month t --> water[t][c]
     [0.535, 0.438, 0.452, 0, 0, 0], 
     [0.802, 0.479, 0.507, 0, 0, 0], 
     [0.556, 0.505, 0.640, 0.197, 0, 0], 
@@ -84,7 +84,7 @@ water = [                       # water requriement for crop c in month t --> wa
     [0.373, 0.272, 0, 0, 0, 0.865], 
     [0.456, 0.335, 0.305, 0, 0, 0],
 ]
-water_price = 10                # price of water, dollar/kcub
+water_price = 10                        # price of water, dollar/kcub
 
 
 # Declaring variables
@@ -134,17 +134,58 @@ close(model_file)
 JuMP.optimize!(m)
 
 
-# Print optimum information
+# Printing optimum information
 results_file = open("results.lp", "w")
 println(results_file, "RESULTS:")
-println(results_file, "Optimum objective: ", round(objective_value(m), digits=2))
+println(results_file, "Optimum objective: \$", round(objective_value(m), digits=2))
 println(results_file, "Optimum crop amounts: ")
 for i in 1:6
     println(results_file, "    - ", crop_idx_r[i], ": ", round(value.(crop_amt)[i], digits=2), " ha")
 end
-
-println(results_file, "Optimum crop sales: ", value.(crop_sale))
-println(results_file, "Optimum permanent labor: ", value.(labor_perm))
-println(results_file, "Optimum temporary labor: ", value.(labor_temp))
-println(results_file, "Optimum bundle fractions: ", value.(b_frac))
+println(results_file, "Optimum crop sales: ")
+for i in 1:6
+    println(results_file, "    - ", crop_idx_r[i], ": ", round(value.(crop_sale)[i], digits=2), " ton")
+end
+println(results_file, "Optimum permanent labor: ", round(value(labor_perm), digits=2), " man")
+println(results_file, "Optimum temporary labor: ")
+for i in 1:12
+    println(results_file, "    - ", Dates.monthname(i)[1:3], ": ", round(value.(labor_temp)[i], digits=2), " hr")
+end
+println(results_file, "Optimum bundle fractions: ")
+for i in 1:3
+    println(results_file, "    - Bundle ", i, ": ", round(Int, value.(b_frac)[i] * 100), "%")
+end
 close(results_file)
+
+
+# Calculating shadow prices
+sens_file = open("sens.lp", "w")
+
+if ARGS[1] == "shadow"
+    if "labor" in ARGS
+        # Calculating shadow prices for labor
+        sp_array = shadow_price.(labor_requirements)
+
+        # Printing shadow price information
+        println(sens_file, "Shadow Prices for Labor:")
+        for i in 1:12
+            println(sens_file, Dates.monthname(i)[1:3], ": ", round(sp_array[i], digits=2))
+        end
+        println(sens_file)
+    end
+    if "water" in ARGS
+        # Calculating shadow prices for labor
+        sp_array = shadow_price.(water_monthly)
+
+        # Printing shadow price information
+        println(sens_file, "Shadow Prices for Water:")
+        for i in 1:12
+            println(sens_file, Dates.monthname(i)[1:3], ": ", round(sp_array[i], digits=2))
+        end
+        println(sens_file)
+    end
+end
+
+
+
+# Calculating reduced costs
