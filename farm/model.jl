@@ -134,6 +134,10 @@ close(model_file)
 JuMP.optimize!(m)
 
 
+# Organize results for printing
+data = hcat()
+
+
 # Print optimum information
 results_file = open("results.lp", "w")
 println(results_file, "RESULTS:")
