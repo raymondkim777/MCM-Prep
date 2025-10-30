@@ -159,9 +159,9 @@ close(results_file)
 
 
 # Calculating shadow prices
-sens_file = open("sens.lp", "w")
-
-if ARGS[1] == "shadow"
+if length(ARGS) != 0 && ARGS[1] == "shadow"
+    sens_file = open("sens.lp", "w")
+    
     if "labor" in ARGS
         # Calculating shadow prices for labor
         sp_array = shadow_price.(labor_requirements)
