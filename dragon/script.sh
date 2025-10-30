@@ -1,1 +1,1 @@
-python dragon_model.py --n 10 --t 10 
+python model.py --n 10 --t 1200
