@@ -8,6 +8,7 @@ import tabulate
 CAL_COEFF = 0.2209
 CAL_PER_KG = 5000
 MAX_KG_P1 = 8000
+MAX_KG_P2 = 20000
 KG_PER_CARIBOU = 45
 
 
@@ -74,9 +75,15 @@ def mass_model(
 	p_init, pK, pr = args.p0, args.k, args.pr
 
 
-	all_mass_list = []
-	all_food_list = []
-	all_fire_list = []
+	all_p1_mass_list = []
+	all_p1_food_list = []
+	all_p1_fire_list = []
+
+	all_p2_mass_list = []
+	all_p2_food_list = []
+	all_p2_fire_list = []
+	all_p2_cari_pop_list = []
+	all_p2_cari_add_list = []
 	
 	# run trials
 	for trial in range(n):
@@ -141,32 +148,62 @@ def mass_model(
 					
 					# TODO: limit dragon food intake
 					break
-				else:
-					# append mass/food to trial list phase2
-					p2_mass_list.append(cur_mass)
-					p2_food_list.append(cur_food)
-					p2_fire_list.append(cur_fire)
+				
+				# append mass/food to trial list phase2
+				p2_mass_list.append(cur_mass)
+				p2_food_list.append(cur_food)
+				p2_fire_list.append(cur_fire)
 
-					harvest_results = prey_model(pop_caribou, p_harvest)
-					p2_cari_pop_list.append(harvest_results['new_pop'])
-					# overharvesting
-					if harvest_results['p_next'] < harvest_results['p_min']:
-						p2_cari_add_list.append((trial, harvest_results['p_min'] - harvest_results['p_next']))
-					
-					# update mass based on food_prop
+				harvest_results = prey_model(pop_caribou, p_harvest)
+				p2_cari_pop_list.append(harvest_results['new_pop'])
+				# overharvesting
+				if harvest_results['p_next'] < harvest_results['p_min']:
+					p2_cari_add_list.append((trial, harvest_results['p_min'] - harvest_results['p_next']))
+				
+				# update mass based on food_prop
+				if cur_mass < MAX_KG_P2:
 					mass_growth = 1 + food_prop_p2 * (np.power(r, 1/12) - 1)
 					cur_mass *= mass_growth
-
 		
-		# final padding
-		p1_mass_list.append(cur_mass)
-		p1_food_list.append(0)
-		p1_fire_list.append(0)
+		# appending trial result
+		if phase2:
+			# final padding
+			p2_mass_list.append(cur_mass)
+			p2_food_list.append(0)
+			p2_fire_list.append(0)
+			p2_cari_pop_list.append(0)
+			p2_cari_add_list.append(0)
 
-		# append trials
-		all_mass_list.append(p1_mass_list)
-		all_food_list.append(p1_food_list)
-		all_fire_list.append(p1_fire_list)
+			# append trials
+			all_p1_mass_list.append(p1_mass_list)
+			all_p1_food_list.append(p1_food_list)
+			all_p1_fire_list.append(p1_fire_list)
+
+			all_p2_mass_list.append(p2_mass_list)
+			all_p2_food_list.append(p2_food_list)
+			all_p2_fire_list.append(p2_fire_list)
+			all_p2_cari_pop_list.append(p2_cari_pop_list)
+			all_p2_cari_add_list.append(p2_cari_add_list)
+		
+		else:
+			# final padding
+			p1_mass_list.append(cur_mass)
+			p1_food_list.append(0)
+			p1_fire_list.append(0)
+
+			# append trials
+			all_p1_mass_list.append(p1_mass_list)
+			all_p1_food_list.append(p1_food_list)
+			all_p1_fire_list.append(p1_fire_list)
+	
+	# print results from all trials
+	if phase2:
+		# trial_data = 
+		with open('results.txt', 'w', encoding='utf-8') as f:
+			f.write(f"PHASE 1 - ")
+			headers = ['Trial', 'Type'] + [i + 1 for i in range(t + 1)]
+			f.write(tabulate.tabulate(trial_data, headers=headers, floatfmt=".2f", tablefmt='rounded_grid'))
+
 
 	
 
