@@ -2,13 +2,18 @@ import numpy as np
 import argparse
 from mass_model import mass_model
 from prey_model import prey_model, get_max_harvest
+from cost_model import cost_food_vec, cost_people_vec, cost_logistics_vec, cost_space_vec
 import tabulate
 
 
+DRAGON_CNT = 1
+GROWTH_RATE_1 = np.power(3, 1/12)
+GROWTH_RATE_2 = np.power(208013628 / 10, 1/(310 * 12))
+# GROWTH_RATE_2 = np.power(3, 1/12)
 CAL_COEFF = 0.2209
 CAL_PER_KG = 5000
 MAX_KG_P1 = 8000
-MAX_KG_P2 = 20000
+MAX_KG_P2 = 200000000000
 KG_PER_CARIBOU = 45
 
 
@@ -18,8 +23,7 @@ def _parse_args():
 	parser.add_argument('--t', type=int, default=120, help='number of months')
 	parser.add_argument('--tm', type=int, default=30, help='number of days in a month')
 	parser.add_argument('--fire', type=int, default=4, help='average days in a month dragon breathes fire')
-	parser.add_argument('--r', type=float, default=3, help='average yearly growth rate of dragon mass')
-	parser.add_argument('--f', type=float, default=0.5, help='average proportion of food to feed dragon (0~1)')
+	parser.add_argument('--f', type=float, default=1, help='average proportion of food to feed dragon (0~1)')
 	parser.add_argument('--m0', type=float, default=10, help='initial dragon mass')
 	parser.add_argument('--phase2', action="store_true")
 	parser.add_argument('--p0', type=float, default=13000, help='initial caribou population')
@@ -32,7 +36,7 @@ def calculate_rer(cur_mass):
 	return 70 * np.power(cur_mass, 0.75)
 
 
-def calculate_monthly_food_p1(
+def calculate_monthly_food(
 		cur_mass, 	# current dragon mass
 		food_prop = 0.5,	# average proportion of food to feed dragon (0~1)
 		d = 30,     # days in a month
@@ -48,29 +52,19 @@ def calculate_monthly_food_p1(
 	return new_food, fire_days
 
 
-def calculate_monthly_food_p2(
-		cur_mass, 
-		food_prop_p2,
-		d = 30,     # days in a month
-		lam = 4,    # average number of fire days per month
-	):
-	pass
-
-
 def mass_model(
 		args
 		# n = 50,     # trial number
 		# t = 120,    # number of months to run model
 		# d = 30,     # days in a month
 		# lam = 4,    # average number of fire days per month
-		# r = 3,      # average yearly mass growth rate
 		# f = 0.5,	# average proportion of food to feed dragon (0~1)
 		# m_0 = 10,   # initial dragon mass
 		# phase2 = False,
 	):
 	
 	# unpack args
-	n, t, d, lam, r, f, m_0 = args.n, args.t, args.tm, args.fire, args.r, args.f, args.m0
+	n, t, d, lam, f, m_0 = args.n, args.t, args.tm, args.fire, args.f, args.m0
 	phase2 = args.phase2
 	p_init, pK, pr = args.p0, args.k, args.pr
 
@@ -78,19 +72,26 @@ def mass_model(
 	all_p1_mass_list = []
 	all_p1_food_list = []
 	all_p1_fire_list = []
+	all_p1_food_cost = []
+	all_p1_empl_cost = []
+	all_p1_logi_cost = []
+	all_p1_spac_cost = []
 
 	all_p2_mass_list = []
 	all_p2_food_list = []
 	all_p2_fire_list = []
 	all_p2_cari_pop_list = []
 	all_p2_cari_add_list = []
+	all_p2_food_cost = []
+	all_p2_empl_cost = []
+	all_p2_logi_cost = []
+	all_p2_spac_cost = []
 	
 	# run trials
 	for trial in range(n):
 		p1_mass_list = []
 		p1_food_list = []
 		p1_fire_list = []
-		p1_cari_add_list = []
 
 		p2_mass_list = []
 		p2_food_list = []
@@ -99,7 +100,7 @@ def mass_model(
 		p2_cari_add_list = []
 
 		# initalize mass
-		cur_mass = m_0
+		cur_mass = np.float64(m_0)
 
 		# initialize AREA prey model (for phase 2)
 		pop_caribou = p_init
@@ -121,24 +122,26 @@ def mass_model(
 					food_prop_p1 = 0 
 			
 			if not phase_2_flag:
-				cur_food, cur_fire = calculate_monthly_food_p1(cur_mass, food_prop=food_prop_p1, d=d, lam=lam)
+				# PHASE 1
+				cur_food, cur_fire = calculate_monthly_food(cur_mass, food_prop=food_prop_p1, d=d, lam=lam)
 
 				# append mass/food to trial list phase1
-				p1_mass_list.append(cur_mass)
-				p1_food_list.append(cur_food)
+				p1_mass_list.append(cur_mass.item())
+				p1_food_list.append(cur_food.item())
 				p1_fire_list.append(cur_fire)
-				p1_cari_add_list.append(0)  # dont have to add caribou
 
 				# update mass based on food_prop
-				mass_growth = 1 + food_prop_p1 * (np.power(r, 1/12) - 1)
+				growth_rate = GROWTH_RATE_1 if month < 48 else GROWTH_RATE_2
+				mass_growth = 1 + food_prop_p1 * (growth_rate - 1)
 				cur_mass *= mass_growth
 			else:
 				# PHASE 2
-				cur_food, cur_fire = calculate_monthly_food_p2(cur_mass)
 				food_prop_p2 = f
+				cur_food, cur_fire = calculate_monthly_food(cur_mass, food_prop=food_prop_p2, d=d, lam=lam)
 
 				# compare food req (kg) with available max caribou harvest population
-				p_harvest = int(cur_food / KG_PER_CARIBOU)  # round down
+				# NOTE: This is for all 3 dragons
+				p_harvest = int(cur_food * DRAGON_CNT / KG_PER_CARIBOU)  # round down
 
 				# dragon needs too much food
 				if p_harvest > get_max_harvest():
@@ -146,8 +149,7 @@ def mass_model(
 					with open('log.txt', 'a', encoding='utf-8') as f:
 						f.write(f"Trial {trial}: Dragon got too big, required food exceeded maximum harvest - Limiting dragon food intake\n")
 					
-					# TODO: limit dragon food intake
-					break
+					raise ValueError("dragon got too big")
 				
 				# append mass/food to trial list phase2
 				p2_mass_list.append(cur_mass)
@@ -155,14 +157,21 @@ def mass_model(
 				p2_fire_list.append(cur_fire)
 
 				harvest_results = prey_model(pop_caribou, p_harvest)
-				p2_cari_pop_list.append(harvest_results['new_pop'])
+				p2_cari_pop_list.append(harvest_results['p_next'])
+
+				# update caribou pop
+				pop_caribou = harvest_results['p_next']
+
 				# overharvesting
 				if harvest_results['p_next'] < harvest_results['p_min']:
 					p2_cari_add_list.append((trial, harvest_results['p_min'] - harvest_results['p_next']))
+					# re-add caribou
+					pop_caribou = harvest_results['p_min']
 				
 				# update mass based on food_prop
 				if cur_mass < MAX_KG_P2:
-					mass_growth = 1 + food_prop_p2 * (np.power(r, 1/12) - 1)
+					growth_rate = GROWTH_RATE_1 if month < 48 else GROWTH_RATE_2
+					mass_growth = 1 + food_prop_p2 * (growth_rate - 1)
 					cur_mass *= mass_growth
 		
 		# appending trial result
@@ -196,13 +205,81 @@ def mass_model(
 			all_p1_food_list.append(p1_food_list)
 			all_p1_fire_list.append(p1_fire_list)
 	
+		# compute costs
+		# all_p1_food_cost = []
+		# all_p1_empl_cost = []
+		# all_p1_logi_cost = []
+		# all_p1_spac_cost = []
+
+		all_p1_food_cost.append(list(cost_food_vec(p1_food_list)))
+		all_p1_empl_cost.append(list(cost_people_vec(p1_mass_list)))
+		all_p1_logi_cost.append(list(cost_logistics_vec(p1_mass_list)))
+		all_p1_spac_cost.append(list(cost_space_vec(p1_mass_list)))
+
+		p2_extra_food_list = np.asarray(p2_cari_add_list) * KG_PER_CARIBOU
+		all_p2_food_cost.append(list(cost_food_vec(p2_extra_food_list)))
+		all_p2_empl_cost.append(list(cost_people_vec(p2_mass_list)))
+		all_p2_logi_cost.append(list(cost_logistics_vec(p2_mass_list)))
+		all_p2_spac_cost.append(list(cost_space_vec(p2_mass_list)))
+	
 	# print results from all trials
+	trial_cnt = len(all_p1_mass_list)
+	trial_data_1 = []
+	max_month_cnt = 0
+	for trial in range(trial_cnt):
+		max_month_cnt = max(max_month_cnt, len(all_p1_mass_list[trial]))
+	
+	trial_costs = []
+
+	for trial in range(trial_cnt):
+		p1_mass_list = all_p1_mass_list[trial]
+		p1_food_list = all_p1_food_list[trial]
+		p1_fire_list = all_p1_fire_list[trial]
+
+		total_cost = sum(all_p1_food_cost[trial]) 
+		+ sum(all_p1_empl_cost[trial])
+		+ sum(all_p1_logi_cost[trial])
+		+ sum(all_p1_spac_cost[trial])
+		trial_costs.append(total_cost)
+
+		trial_data_1.append(([trial + 1, 'Mass'] + p1_mass_list + [0] * max_month_cnt)[:max_month_cnt + 3] + [total_cost])
+		trial_data_1.append(([trial + 1, 'Food'] + p1_food_list + [0] * max_month_cnt)[:max_month_cnt + 3] + [0])
+		trial_data_1.append(([trial + 1, 'Fire'] + p1_fire_list + [0] * max_month_cnt)[:max_month_cnt + 3] + [0])
+
+	with open('results.txt', 'w', encoding='utf-8') as f:
+		f.write(f"PHASE 1 - ({max_month_cnt - 1} months)\n")
+		headers = ['Trial', 'Type'] + [i for i in range(max_month_cnt)] + ['Total Cost']
+		f.write(tabulate.tabulate(trial_data_1, headers=headers, floatfmt=".2f"))
+
 	if phase2:
-		# trial_data = 
-		with open('results.txt', 'w', encoding='utf-8') as f:
-			f.write(f"PHASE 1 - ")
-			headers = ['Trial', 'Type'] + [i + 1 for i in range(t + 1)]
-			f.write(tabulate.tabulate(trial_data, headers=headers, floatfmt=".2f", tablefmt='rounded_grid'))
+		trial_cnt = len(all_p2_mass_list)
+		trial_data_2 = []
+		max_month_cnt = 0
+		for trial in range(trial_cnt):
+			max_month_cnt = max(max_month_cnt, len(all_p2_mass_list[trial]))
+			p2_mass_list = all_p2_mass_list[trial]
+			p2_food_list = all_p2_food_list[trial]
+			p2_fire_list = all_p2_fire_list[trial]
+			p2_cari_pop_list = all_p2_cari_pop_list[trial]
+			p2_cari_add_list = all_p2_cari_add_list[trial]
+
+			total_cost = sum(all_p2_food_cost[trial]) 
+			+ sum(all_p2_empl_cost[trial])
+			+ sum(all_p2_logi_cost[trial])
+			+ sum(all_p2_spac_cost[trial])
+
+			final_cost = trial_costs[trial] + total_cost
+
+			trial_data_2.append(([trial + 1, 'Mass'] + p2_mass_list + [0] * max_month_cnt)[:max_month_cnt + 3] + [total_cost, final_cost])
+			trial_data_2.append(([trial + 1, 'Food'] + p2_food_list + [0] * max_month_cnt)[:max_month_cnt + 3] + [0, 0])
+			trial_data_2.append(([trial + 1, 'Fire'] + p2_fire_list + [0] * max_month_cnt)[:max_month_cnt + 3] + [0, 0])
+			trial_data_2.append(([trial + 1, 'CPop'] + p2_cari_pop_list + [0] * max_month_cnt)[:max_month_cnt + 3] + [0, 0])
+			trial_data_2.append(([trial + 1, 'CAdd'] + p2_cari_add_list + [0] * max_month_cnt)[:max_month_cnt + 3] + [0, 0])
+
+		with open('results.txt', 'a', encoding='utf-8') as f:
+			f.write(f"\n\nPHASE 2 - ({max_month_cnt - 1} months)\n")
+			headers = ['Trial', 'Type'] + [i for i in range(t + 1)] + ['Total Cost', 'Final Cost']
+			f.write(tabulate.tabulate(trial_data_2, headers=headers, floatfmt=".2f"))
 
 
 	

@@ -59,7 +59,20 @@ def prey_model(pop_cur, harvest_amt):
     global H
     H = harvest_amt
     caribou_sol = solve_ivp(caribou_model, t_span, [pop_cur], t_eval=t_eval)
-    idx = min(range(len(caribou_sol.t)), key=lambda i: abs(caribou_sol.t[i]-(1/12)))
+    
+    # Plot the results
+    # plt.figure(figsize=(8, 5))
+    # plt.plot(caribou_sol.t, caribou_sol.y[0], label=f'h = {harvest_amt}')
+    # plt.axhline(K, color='blue', linestyle='--', label='Carrying Capacity')
+    # plt.xlabel('Time (months)')
+    # plt.ylabel('Caribou Population')
+    # plt.title('Caribou Population with Harvesting')
+    # plt.legend()
+    # plt.grid(True)
+    # plt.show()
+    # print(caribou_sol)
+
+    idx = min(range(len(caribou_sol.t)), key=lambda i: abs(caribou_sol.t[i]-1))
     new_pop = caribou_sol.y[0][idx]
     min_pop, max_pop = get_pop_fixed_pts(harvest_amt)
     return {
@@ -70,12 +83,6 @@ def prey_model(pop_cur, harvest_amt):
 
 
 if __name__ == '__main__':
-    caribou_sol = solve(caribou_model, p0, t_span, t_eval)
-    idx = min(range(len(caribou_sol.t)), key=lambda i: abs(caribou_sol.t[i]-(1/12)))
-    new_pop = caribou_sol.y[0][idx]
-    min_pop, max_pop = get_pop_fixed_pts(H)
-    max_harvest = caribou_model(5, K / 2) + H
-    print(new_pop)
-    print(min_pop)
-    print(max_pop)
-    print(max_harvest)
+
+    result = prey_model(13000, 1000)
+    print(result)

@@ -1,0 +1,1 @@
+Trial 0: Dragon got too big, required food exceeded maximum harvest - Limiting dragon food intake

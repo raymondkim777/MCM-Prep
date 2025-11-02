@@ -60,11 +60,14 @@ def caloric(M):
     return 50 * (M ** 0.75)
 
 
-def cost_food_vec(M, caloric, H):
+# def cost_food_vec(M, caloric, H):
 
-    M = np.asarray(M)
-    F_M = np.asarray(caloric1(M))
-    return (F_M - H) * P
+#     M = np.asarray(M)
+#     F_M = np.asarray(caloric(M))
+#     return (F_M - H) * P
+
+def cost_food_vec(food_vec):
+    return P * np.asarray(food_vec)
 
 def cost_people_vec(M):
     """
@@ -83,8 +86,6 @@ def cost_space_vec(M):
     M = np.asarray(M)
     return (M / 10) * 4000  # in $/month
 
-def caloric1(M):
-    return 50 * np.power(M, 0.75)
 
 # Baseline harvesting level
 H = 100  # kg of food dragon eats each month?
