@@ -1,12 +1,14 @@
 import numpy as np
 import argparse
+import tabulate
+import matplotlib.pyplot as plt
+
 from mass_model import mass_model
 from prey_model import prey_model, get_max_harvest
 from cost_model import cost_food_vec, cost_people_vec, cost_logistics_vec, cost_space_vec
-import tabulate
 
 
-DRAGON_CNT = 1
+DRAGON_CNT = 3
 GROWTH_RATE_1 = np.power(3, 1/12)
 GROWTH_RATE_2 = np.power(208013628 / 10, 1/(310 * 12))
 # GROWTH_RATE_2 = np.power(3, 1/12)
@@ -85,6 +87,10 @@ def mass_model(
 	all_p2_empl_cost = []
 	all_p2_logi_cost = []
 	all_p2_spac_cost = []
+
+	# reset log
+	with open('log.txt', 'w', encoding='utf-8') as file:
+		file.write("")
 	
 	# run trials
 	for trial in range(n):
@@ -149,7 +155,7 @@ def mass_model(
 					# log
 					with open('log.txt', 'a', encoding='utf-8') as file:
 						file.write(f"Trial {trial}, Month {month}: Dragon got too big, required food exceeded maximum harvest - Limiting dragon food intake\n")
-						file.write(f"Requries {residual} more caribou to return it to max harvest to avoid extinction")
+						file.write(f"Requires {residual} more caribou to return it to max harvest to avoid extinction\n")
 					# add more caribou
 					cari_to_add += residual
 				
@@ -187,7 +193,6 @@ def mass_model(
 			p2_fire_list.append(0)
 			p2_cari_pop_list.append(0)
 			p2_cari_add_list.append(0)
-			print(p2_cari_add_list)
 
 			# append trials
 			all_p1_mass_list.append(p1_mass_list)
@@ -251,15 +256,21 @@ def mass_model(
 
 	with open('results.txt', 'w', encoding='utf-8') as f:
 		f.write(f"PHASE 1 - ({max_month_cnt - 1} months)\n")
-		headers = ['Trial', 'Type'] + [i for i in range(max_month_cnt)] + ['Total Cost']
-		f.write(tabulate.tabulate(trial_data_1, headers=headers, floatfmt=".2f"))
+		headers = ['Trial', 'Type'] + [i for i in range(max_month_cnt + 1)] + ['Total Cost']
+		f.write(tabulate.tabulate(trial_data_1, headers=headers, floatfmt=".1f"))
 
 	if phase2:
+		specific_food = {603: [], 756: [], 959: [], 1112: [], 1200: []}
+
 		trial_cnt = len(all_p2_mass_list)
 		trial_data_2 = []
 		max_month_cnt2 = 0
 		for trial in range(trial_cnt):
-			max_month_cnt2 = max(max_month_cnt2, len(all_p1_mass_list[trial]))
+			max_month_cnt2 = max(max_month_cnt2, len(all_p2_mass_list[trial]))
+			if trial < 5:
+				for idx in specific_food:
+					specific_food[idx].append(float(all_p2_food_list[trial][idx - max_month_cnt]))
+		print(specific_food)
 
 		for trial in range(trial_cnt):
 			p2_mass_list = all_p2_mass_list[trial]
@@ -280,13 +291,22 @@ def mass_model(
 
 		with open('results.txt', 'a', encoding='utf-8') as f:
 			f.write(f"\n\nPHASE 2 - ({max_month_cnt2 - 1} months)\n")
-			headers = ['Trial', 'Type'] + [i for i in range(t + 1)] + ['Total Cost', 'Final Cost']
+			headers = ['Trial', 'Type'] + [max_month_cnt + i for i in range(max_month_cnt2 + 1)] + ['Total Cost', 'Final Cost']
 			f.write(tabulate.tabulate(trial_data_2, headers=headers, floatfmt=".2f"))
 
+		# plotting caribou add
+		plt.figure(figsize=(10, 6))
+		plt.title("Figure 1: Additional Caribous Required Each Month in Phase 2 (3 Dragons)")
+		plt.xlabel("Month")
+		plt.ylabel("Caribous to Add")
+		x_data = list(range(max_month_cnt, max_month_cnt + max_month_cnt2))[:-1]
+		for trial in range(trial_cnt):
+			y_data = all_p2_cari_add_list[trial][:-1]
+			plt.plot(x_data, y_data, linestyle='-', color='grey', alpha=0.5)
+		plt.tight_layout()
+		plt.show()
 
 	
-
-
 if __name__ == "__main__":
 	np.random.seed(42)
 
