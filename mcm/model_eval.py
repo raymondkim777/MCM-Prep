@@ -48,12 +48,7 @@ def find_cont_num(season_data, cur_week: int):  # RETURNS: current contestants, 
 
 for season in all_seasons:
     # scoring type
-    if 1 <= season <= 2:
-        method_type = 1
-    elif 3 <= season <= 27:
-        method_type = 2
-    else:
-        method_type = 3
+    method_type = 1 if 1 <= season <= 2 else 2 if 3 <= season <= 27 else 3
 
     if DO_PRINT_WEEK:
         print(f"############## SEASON {season} ##############")
@@ -172,4 +167,4 @@ for season in all_seasons:
         print(f"Matched: {matched_constraints}")
         print(f"Match Rate %: {matched_constraints / total_constraints * 100:.2f}")
 
-
+print(f"############## END RESULTS ##############")
