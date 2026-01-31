@@ -7,21 +7,16 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 
-SEASON = 2
-METHOD = 1  # 1: ranking, 2: percentages, 3: fuck me
+SEASON = 20
+# 1: ranking, 2: percentages, 3: fuck me
+METHOD = 1 if 1 <= SEASON <= 2 else 2 if 3 <= SEASON <= 27 else 3
 
 
-if METHOD == 1:
-    assert 1 <= SEASON <= 2
-    df = pd.read_csv('data/season_1_2.csv', header=0)
-elif METHOD == 2:
-    assert 3 <= SEASON <= 27
-    df = pd.read_csv('data/season_3_27.csv', header=0)
-else:
-    assert 28 <= SEASON <= 34
-    df = pd.read_csv('data/season_28_34.csv', header=0)
-
-
+# read processed data
+df1 = pd.read_csv('data/season_1_2.csv', header=0)
+df2 = pd.read_csv('data/season_3_27.csv', header=0)
+df3 = pd.read_csv('data/season_28_34.csv', header=0)
+df = pd.concat([df1, df2, df3], ignore_index=True)
 column_headers = df.columns.tolist()
 
 # copy df for sorting
@@ -34,7 +29,7 @@ print()
 temp_col_names = [f"week{i}_all_judge_score" for i in range(1, 12)]
 num_weeks = 11 - season_data[temp_col_names].isna().all().sum()
 num_ppl = len(season_data)     # no header
-print(f"Week #: {num_weeks}")
+print(f"Week Count: {num_weeks}")
 print(f"Contestants: {num_ppl}")
 print()
 
