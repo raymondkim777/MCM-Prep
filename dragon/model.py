@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 
 from mass_model import mass_model
 from prey_model import prey_model, get_max_harvest
-from cost_model import cost_food_vec, cost_people_vec, cost_logistics_vec, cost_space_vec
+from cost_model import cost_food_vec, cost_people_vec, cost_logistics_vec_phase1, cost_logistics_open_vec_phase2, cost_space_vec
+# from cost_model_low import cost_food_vec, cost_people_vec, cost_logistics_vec_phase1, cost_logistics_open_vec_phase2, cost_space_vec
 
 
 DRAGON_CNT = 3
@@ -31,6 +32,7 @@ def _parse_args():
 	parser.add_argument('--p0', type=float, default=13000, help='initial caribou population')
 	parser.add_argument('--k', type=float, default=20000, help='caribou population carrying capacity')
 	parser.add_argument('--pr', type=float, default=0.317, help='annual caribou population growth rate')
+	parser.add_argument('--plot', action="store_true")
 	return parser.parse_args()
 
 
@@ -68,6 +70,7 @@ def mass_model(
 	n, t, d, lam, f, m_0 = args.n, args.t, args.tm, args.fire, args.f, args.m0
 	phase2 = args.phase2
 	p_init, pK, pr = args.p0, args.k, args.pr
+	plot_caribou = args.plot
 
 
 	all_p1_mass_list = []
@@ -224,13 +227,13 @@ def mass_model(
 
 		all_p1_food_cost.append(list(cost_food_vec(p1_food_list)))
 		all_p1_empl_cost.append(list(cost_people_vec(p1_mass_list)))
-		all_p1_logi_cost.append(list(cost_logistics_vec(p1_mass_list)))
+		all_p1_logi_cost.append(list(cost_logistics_vec_phase1(p1_mass_list)))
 		all_p1_spac_cost.append(list(cost_space_vec(p1_mass_list)))
 
 		p2_extra_food_list = np.asarray(p2_cari_add_list) * KG_PER_CARIBOU
 		all_p2_food_cost.append(list(cost_food_vec(p2_extra_food_list)))
 		all_p2_empl_cost.append(list(cost_people_vec(p2_mass_list)))
-		all_p2_logi_cost.append(list(cost_logistics_vec(p2_mass_list)))
+		all_p2_logi_cost.append(list(cost_logistics_open_vec_phase2(p2_mass_list)))
 		all_p2_spac_cost.append(list(cost_space_vec(p2_mass_list)))
 	
 	# print results from all trials
@@ -241,22 +244,30 @@ def mass_model(
 		max_month_cnt = max(max_month_cnt, len(all_p1_mass_list[trial]))
 	
 	trial_costs = []
+	trial_costs_detailed = []
 
 	for trial in range(trial_cnt):
 		p1_mass_list = all_p1_mass_list[trial]
 		p1_food_list = all_p1_food_list[trial]
 		p1_fire_list = all_p1_fire_list[trial]
 
-		total_cost = sum(all_p1_food_cost[trial]) + sum(all_p1_empl_cost[trial]) + sum(all_p1_logi_cost[trial]) + sum(all_p1_spac_cost[trial])
+		total_cost = DRAGON_CNT * (sum(all_p1_food_cost[trial]) + sum(all_p1_empl_cost[trial]) + sum(all_p1_logi_cost[trial]) + sum(all_p1_spac_cost[trial]))
 		trial_costs.append(total_cost)
+		costs_breakdown = {
+			'food': sum(all_p1_food_cost[trial]),
+			'people': sum(all_p1_empl_cost[trial]),
+			'logistics': sum(all_p1_logi_cost[trial]), 
+			'space': sum(all_p1_spac_cost[trial]),
+		}
+		trial_costs_detailed.append(costs_breakdown)
 
-		trial_data_1.append(([trial + 1, 'Mass'] + p1_mass_list + [0] * max_month_cnt)[:max_month_cnt + 3] + [total_cost])
-		trial_data_1.append(([trial + 1, 'Food'] + p1_food_list + [0] * max_month_cnt)[:max_month_cnt + 3] + [0])
-		trial_data_1.append(([trial + 1, 'Fire'] + p1_fire_list + [0] * max_month_cnt)[:max_month_cnt + 3] + [0])
+		trial_data_1.append(([trial + 1, 'Mass'] + p1_mass_list + [0] * max_month_cnt)[:max_month_cnt + 3] + [total_cost, costs_breakdown['logistics']])
+		trial_data_1.append(([trial + 1, 'Food'] + p1_food_list + [0] * max_month_cnt)[:max_month_cnt + 3] + [costs_breakdown['food'], costs_breakdown['space']])
+		trial_data_1.append(([trial + 1, 'Fire'] + p1_fire_list + [0] * max_month_cnt)[:max_month_cnt + 3] + [costs_breakdown['people'], 0])
 
 	with open('results.txt', 'w', encoding='utf-8') as f:
 		f.write(f"PHASE 1 - ({max_month_cnt - 1} months)\n")
-		headers = ['Trial', 'Type'] + [i for i in range(max_month_cnt + 1)] + ['Total Cost']
+		headers = ['Trial', 'Type'] + [i for i in range(max_month_cnt + 1)] + ['Total Cost', 'Other Costs']
 		f.write(tabulate.tabulate(trial_data_1, headers=headers, floatfmt=".1f"))
 
 	if phase2:
@@ -272,6 +283,8 @@ def mass_model(
 					specific_food[idx].append(float(all_p2_food_list[trial][idx - max_month_cnt]))
 		print(specific_food)
 
+		trial_costs_detailed = []
+
 		for trial in range(trial_cnt):
 			p2_mass_list = all_p2_mass_list[trial]
 			p2_food_list = all_p2_food_list[trial]
@@ -279,14 +292,19 @@ def mass_model(
 			p2_cari_pop_list = all_p2_cari_pop_list[trial]
 			p2_cari_add_list = all_p2_cari_add_list[trial]
 
-			total_cost = sum(all_p2_food_cost[trial]) + sum(all_p2_empl_cost[trial]) + sum(all_p2_logi_cost[trial]) + sum(all_p2_spac_cost[trial])
+			total_cost = sum(all_p2_food_cost[trial]) + DRAGON_CNT * (sum(all_p2_empl_cost[trial]) + sum(all_p2_logi_cost[trial]))
+			costs_breakdown = {
+				'food': sum(all_p2_food_cost[trial]),
+				'people': sum(all_p2_empl_cost[trial]),
+				'logistics': sum(all_p2_logi_cost[trial])
+			}
 
 			final_cost = trial_costs[trial] + total_cost
 
 			trial_data_2.append(([trial + 1, 'Mass'] + p2_mass_list + [0] * max_month_cnt2)[:max_month_cnt2 + 3] + [total_cost, final_cost])
-			trial_data_2.append(([trial + 1, 'Food'] + p2_food_list + [0] * max_month_cnt2)[:max_month_cnt2 + 3] + [0, 0])
-			trial_data_2.append(([trial + 1, 'Fire'] + p2_fire_list + [0] * max_month_cnt2)[:max_month_cnt2 + 3] + [0, 0])
-			trial_data_2.append(([trial + 1, 'CPop'] + p2_cari_pop_list + [0] * max_month_cnt2)[:max_month_cnt2 + 3] + [0, 0])
+			trial_data_2.append(([trial + 1, 'Food'] + p2_food_list + [0] * max_month_cnt2)[:max_month_cnt2 + 3] + [costs_breakdown['food'], 0])
+			trial_data_2.append(([trial + 1, 'Fire'] + p2_fire_list + [0] * max_month_cnt2)[:max_month_cnt2 + 3] + [costs_breakdown['people'], 0])
+			trial_data_2.append(([trial + 1, 'CPop'] + p2_cari_pop_list + [0] * max_month_cnt2)[:max_month_cnt2 + 3] + [costs_breakdown['logistics'], 0])
 			trial_data_2.append(([trial + 1, 'CAdd'] + p2_cari_add_list + [0] * max_month_cnt2)[:max_month_cnt2 + 3] + [0, 0])
 
 		with open('results.txt', 'a', encoding='utf-8') as f:
@@ -295,16 +313,17 @@ def mass_model(
 			f.write(tabulate.tabulate(trial_data_2, headers=headers, floatfmt=".2f"))
 
 		# plotting caribou add
-		plt.figure(figsize=(10, 6))
-		plt.title("Figure 1: Additional Caribous Required Each Month in Phase 2 (3 Dragons)")
-		plt.xlabel("Month")
-		plt.ylabel("Caribous to Add")
-		x_data = list(range(max_month_cnt, max_month_cnt + max_month_cnt2))[:-1]
-		for trial in range(trial_cnt):
-			y_data = all_p2_cari_add_list[trial][:-1]
-			plt.plot(x_data, y_data, linestyle='-', color='grey', alpha=0.5)
-		plt.tight_layout()
-		plt.show()
+		if plot_caribou:
+			plt.figure(figsize=(10, 6))
+			plt.title("Figure 2: Additional Caribous Required Each Month in Phase 2 (3 Dragons)")
+			plt.xlabel("Month")
+			plt.ylabel("Caribous to Add")
+			x_data = list(range(max_month_cnt, max_month_cnt + max_month_cnt2))[:-1]
+			for trial in range(trial_cnt):
+				y_data = all_p2_cari_add_list[trial][:-1]
+				plt.plot(x_data, y_data, linestyle='-', color='grey', alpha=0.5)
+			plt.tight_layout()
+			plt.show()
 
 	
 if __name__ == "__main__":

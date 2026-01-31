@@ -1,6 +1,6 @@
 import numpy as np
 # Constants
-P = 12  # $ per kg for food
+P = 7  # $ per kg for food
 
 # -----------------------------
 # 1. Food Cost
@@ -20,7 +20,6 @@ def caloric(M):
 def cost_food_vec(food_vec):
     return P * np.asarray(food_vec)
 
-
 def cost_people_vec(M):
     """
     Vectorized monthly people cost.
@@ -32,12 +31,12 @@ def cost_logistics_vec_phase1(M):
     M = np.asarray(M)
     
     # Constants
-    c_move = 80000      # USD, one-time infrastructure move
-    I_move = 0          # 1 if relocation this month, else 0
-    c_deliv = 0.5       # USD/kg, feed delivery cost
-    c_sup = 400         # USD/staff·month, training & medical supplies
-    b_keeper = 0.4
-    b_vet = 0.25
+    c_move = 50000      # USD, one-time infrastructure move
+    I_move = 0.004          # 1 if relocation this month, else 0
+    c_deliv = 0.3       # USD/kg, feed delivery cost
+    c_sup = 250         # USD/staff·month, training & medical supplies
+    b_keeper = 0.3
+    b_vet = 0.15
     
     F_M = np.asarray(caloric1(M))
     
@@ -54,11 +53,11 @@ def cost_logistics_vec_phase1(M):
 def cost_logistics_open_vec_phase2(M):
     M = np.asarray(M)
 
-    c_pat = 1000        # USD per km of ground patrol per month
-    L_ring = 390         # km, perimeter length of the protected area
-    c_drone = 500       # USD per flight hour
-    h_drone = 40        # hours of drone/helicopter flight per month
-    c_handle = 2        # USD per kg of caribou
+    c_pat = 600         # USD per km of ground patrol per month
+    L_ring = 390        # km, perimeter length of the protected area
+    c_drone = 300       # USD per flight hour
+    h_drone = 25        # hours of drone/helicopter flight per month
+    c_handle = 1        # USD per kg of caribou
     
     F_M = np.asarray(caloric1(M))
     
@@ -95,11 +94,6 @@ if __name__ == "__main__":
 
     print("Food cost ($/month):", cost_food_vec(M, caloric1, H))
     print("People cost ($/month):", cost_people_vec(M))
-
-    # Logistics – Phase 1 (Zoo)
     print("Logistics cost – Phase 1 (Zoo) ($/month):", cost_logistics_vec_phase1(M))
-
-    # Logistics – Phase 2 (Open Area)
     print("Logistics cost – Phase 2 (Open) ($/month):", cost_logistics_open_vec_phase2(M))
-
     print("Space cost ($/month):", cost_space_vec(M))
